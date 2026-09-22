@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>llmservebench - LLM推論バックエンド評価</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>llmservebench</h1>
+  <p class="sub">LLM推論バックエンド (OpenAI互換API) のベンチマーク & 比較</p>
+</header>
+
+<main>
+  <nav class="tabs">
+    <button id="tab-btn-single" class="tab active" type="button">単一ベンチ</button>
+    <button id="tab-btn-compare" class="tab" type="button">バックエンド比較</button>
+  </nav>
+
+  <section class="card" id="tab-single">
+    <h2>ターゲット</h2>
+    <div class="grid">
+      <label>Base URL
+        <input id="base-url" type="text" value="http://localhost:8080/v1" placeholder="http://localhost:8080/v1">
+      </label>
+      <label>Model
+        <span class="model-row">
+          <input id="model" type="text" list="model-list" placeholder="モデルID">
+          <button id="fetch-models" type="button">取得</button>
+        </span>
+        <datalist id="model-list"></datalist>
+      </label>
+      <label>API Key (任意)
+        <input id="api-key" type="password" placeholder="未設定なら空欄">
+      </label>
+    </div>
+    <div class="actions">
+      <button id="run-single" class="primary" type="button">ベンチマーク実行</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="tab-compare">
+    <h2>ターゲット (2つ以上のバックエンドを比較)</h2>
+    <div id="compare-rows"></div>
+    <div class="actions">
+      <button id="add-target" type="button">+ バックエンドを追加</button>
+      <button id="run-compare" class="primary" type="button">比較ベンチ実行</button>
+    </div>
+  </section>
+
+  <section class="card" id="common-card">
+    <h2>共通設定</h2>
+    <div class="grid">
+      <label>並列数 (カンマ区切り)
+        <input id="parallel-levels" type="text" value="1,2,4,8">
+      </label>
+      <label>max tokens
+        <input id="max-tokens" type="number" value="256" min="1">
+      </label>
+      <label>実行回数 (runs)
+        <input id="runs" type="number" value="5" min="1">
+      </label>
+      <label>並列テスト回数
+        <input id="parallel-runs" type="number" value="3" min="1">
+      </label>
+      <label>prefill目標トークン数
+        <input id="prefill-tokens" type="number" value="2048" min="64">
+      </label>
+      <label>temperature (任意)
+        <input id="temperature" type="number" step="0.1" placeholder="未指定">
+      </label>
+      <label>seed (任意)
+        <input id="seed" type="number" placeholder="未指定">
+      </label>
+      <label class="check">
+        <input id="warmup" type="checkbox" checked> ウォームアップを行う
+      </label>
+      <label class="check">
+        <input id="randomize" type="checkbox" checked> プロンプトをランダム化 (prefix cache 対策)
+      </label>
+    </div>
+  </section>
+
+  <section class="card hidden" id="progress-card">
+    <h2>進行状況</h2>
+    <pre id="log"></pre>
+  </section>
+
+  <section class="card hidden" id="result-card">
+    <h2>結果</h2>
+    <div id="result-body"></div>
+    <div class="actions">
+      <button id="export-json" type="button">JSON をダウンロード</button>
+      <button id="export-md" type="button">Markdown をダウンロード</button>
+    </div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

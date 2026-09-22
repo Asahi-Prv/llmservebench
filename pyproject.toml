@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llmservebench"
+version = "0.2.0"
+description = "Benchmark and compare LLM inference backends (OpenAI-compatible APIs)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["httpx>=0.27"]
+
+[project.scripts]
+llmservebench = "llmservebench.cli:main"
+
+[tool.setuptools]
+packages = ["llmservebench"]
+
+[tool.setuptools.package-data]
+llmservebench = ["web/*"]
