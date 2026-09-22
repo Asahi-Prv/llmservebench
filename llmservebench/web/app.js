@@ -48,11 +48,11 @@ function addTargetRow(data) {
   const row = document.createElement("div");
   row.className = "compare-row";
   row.innerHTML = `
-    <label>名前<input class="t-name" type="text" placeholder="llamacpp"></label>
-    <label class="grow">Base URL<input class="t-url" type="text" placeholder="http://localhost:8080/v1"></label>
-    <label class="grow">Model<input class="t-model" type="text" placeholder="モデルID"></label>
-    <label>API Key<input class="t-key" type="password" placeholder="任意"></label>
-    <button class="remove-target" type="button" title="削除">×</button>
+    <label><span data-i18n="target.name">名前</span><input class="input t-name" type="text" placeholder="llamacpp"></label>
+    <label class="grow"><span data-i18n="label.baseUrl">Base URL</span><input class="input t-url" type="text" placeholder="http://localhost:8080/v1"></label>
+    <label class="grow"><span data-i18n="label.model">Model</span><input class="input t-model" type="text" placeholder="モデルID"></label>
+    <label><span data-i18n="label.apiKey">API Key (任意)</span><input class="input t-key" type="password" placeholder="未設定なら空欄" data-i18n-placeholder="label.apiKeyPlaceholder"></label>
+    <button class="button remove-target" type="button" title="×">×</button>
   `;
   if (data) {
     row.querySelector(".t-name").value = data.name || "";
@@ -61,6 +61,7 @@ function addTargetRow(data) {
   }
   row.querySelector(".remove-target").addEventListener("click", () => row.remove());
   $("compare-rows").appendChild(row);
+  applyI18n();
 }
 
 function collectTargets(mode) {
@@ -105,9 +106,9 @@ function collectCommon() {
 
 async function startRun(mode) {
   const targets = collectTargets(mode);
-  for (const t of targets) {
-    if (!t.base_url || !t.model) {
-      alert("全ターゲットの Base URL と Model は必須です");
+  for (const tgt of targets) {
+    if (!tgt.base_url || !tgt.model) {
+      alert(t("alert.missingTarget"));
       return;
     }
   }
@@ -126,14 +127,14 @@ async function startRun(mode) {
     });
     const data = await resp.json();
     if (!resp.ok) {
-      alert(data.error || "開始できませんでした");
+      alert(data.error || t("alert.startFailed"));
       setRunning(false);
       return;
     }
     setRunning(true);
     startPolling();
   } catch (e) {
-    alert("サーバーに接続できません: " + e);
+    alert(t("alert.connFailed", { err: e }));
     setRunning(false);
   }
 }
@@ -185,29 +186,29 @@ function appendLog(line) {
 function formatEvent(ev) {
   switch (ev.type) {
     case "info":
-      return "[info] " + ev.message;
+      return t("log.info", { msg: ev.message });
     case "warn":
-      return "[warn] " + ev.message;
+      return t("log.warn", { msg: ev.message });
     case "target_start":
-      return `##### target: ${ev.name} #####`;
+      return t("log.target", { name: ev.name });
     case "target_error":
-      return `[error] target '${ev.name}': ${ev.message}`;
+      return t("log.targetError", { name: ev.name, msg: ev.message });
     case "phase_start": {
       const extra = ev.name === "parallel" ? ` (parallelism=${ev.parallelism})` : "";
       return `== ${ev.name}${extra} ==`;
     }
     case "phase_end":
-      return `== ${ev.name} 完了 ==`;
+      return t("log.phaseEnd", { name: ev.name });
     case "request_done":
-      if (!ev.ok) return `  #${ev.index}: ERROR ${ev.error || ""}`;
+      if (!ev.ok) return t("log.reqError", { i: ev.index, msg: ev.error || "" });
       if (ev.phase === "prefill") {
-        return `  #${ev.index}: ttft=${fmtSec(ev.ttft_s)} prompt=${fmtRate(ev.prompt_tok_per_s)}`;
+        return t("log.reqPrefill", { i: ev.index, ttft: fmtSec(ev.ttft_s), rate: fmtRate(ev.prompt_tok_per_s) });
       }
-      return `  #${ev.index}: ttft=${fmtSec(ev.ttft_s)} gen=${fmtRate(ev.gen_tok_per_s)}`;
+      return t("log.reqGen", { i: ev.index, ttft: fmtSec(ev.ttft_s), rate: fmtRate(ev.gen_tok_per_s) });
     case "run_done":
-      return `  run ${ev.run}: aggregate=${fmtRate(ev.aggregate_tok_per_s)} wall=${fmtSec(ev.wall_time_s)}`;
+      return t("log.runDone", { run: ev.run, rate: fmtRate(ev.aggregate_tok_per_s), wall: fmtSec(ev.wall_time_s) });
     case "done":
-      return "== all done ==";
+      return t("log.done");
     default:
       return JSON.stringify(ev);
   }
@@ -261,7 +262,7 @@ const STAT_KEYS = ["mean", "median", "p95", "min", "max"];
 
 function tableHTML(headers, rows) {
   return (
-    `<table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>` +
+    `<table class="table"><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>` +
     rows
       .map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`)
       .join("") +
@@ -281,14 +282,14 @@ function targetDetailHTML(target, open) {
   const parts = [];
   const single = phases.single;
   if (single) {
-    parts.push("<h4>単一ストリーム</h4>");
+    parts.push(`<h4>${t("detail.single")}</h4>`);
     parts.push(
       tableHTML(
-        ["指標", ...STAT_KEYS],
+        [t("table.metric"), ...STAT_KEYS.map((k) => t("table." + k))],
         [
-          statRow("TTFT (s)", single.ttft, 3),
-          statRow("生成速度 (tok/s)", single.gen_tok_per_s, 2),
-          statRow("TPOT (s)", single.tpot, 3),
+          statRow(t("table.ttftCol"), single.ttft, 3),
+          statRow(t("table.genCol"), single.gen_tok_per_s, 2),
+          statRow(t("table.tpotCol"), single.tpot, 3),
           statRow("ITL (s)", single.itl, 3),
           statRow("completion tokens", single.completion_tokens, 1),
         ]
@@ -297,16 +298,16 @@ function targetDetailHTML(target, open) {
   }
   const prefill = phases.prefill;
   if (prefill) {
-    parts.push("<h4>prefill (長プロンプト)</h4>");
-    parts.push(tableHTML(["指標", ...STAT_KEYS], [statRow("prompt tok/s", prefill.prompt_tok_per_s, 0)]));
+    parts.push(`<h4>${t("detail.prefill")}</h4>`);
+    parts.push(tableHTML([t("table.metric"), ...STAT_KEYS.map((k) => t("table." + k))], [statRow("prompt tok/s", prefill.prompt_tok_per_s, 0)]));
   }
   const parallel = phases.parallel || {};
   const keys = Object.keys(parallel).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
   if (keys.length) {
-    parts.push("<h4>並列スループット</h4>");
+    parts.push(`<h4>${t("detail.parallel")}</h4>`);
     parts.push(
       tableHTML(
-        ["parallelism", "集約 tok/s (peak)", "TTFT median (s)", "per-req tok/s median", "ok/total"],
+        [t("table.parallelism"), t("table.aggPeak"), t("table.ttftMed"), t("table.perReq"), t("table.ok")],
         keys.map((k) => {
           const p = parallel[k];
           return [
@@ -346,16 +347,16 @@ function renderSingle(target) {
     fmtRate(peak) +
     (s.parallel_aggregate_tok_per_s_peak_level ? ` @ p=${s.parallel_aggregate_tok_per_s_peak_level}` : "");
   const cards = [
-    ["TTFT (median)", fmtSec(s.ttft_s_median)],
-    ["生成速度 (median)", fmtRate(s.gen_tok_per_s_median)],
-    ["TPOT (median)", fmtSec(s.tpot_s_median)],
+    [t("stat.ttft"), fmtSec(s.ttft_s_median)],
+    [t("stat.gen"), fmtRate(s.gen_tok_per_s_median)],
+    [t("stat.tpot"), fmtSec(s.tpot_s_median)],
     [
-      "prefill速度 (median)",
+      t("stat.prefill"),
       typeof s.prefill_prompt_tok_per_s_median === "number"
         ? Math.round(s.prefill_prompt_tok_per_s_median) + " tok/s"
         : "-",
     ],
-    ["並列集約スループット (peak)", peakLabel],
+    [t("stat.peak"), peakLabel],
   ];
   $("result-body").innerHTML =
     `<div class="summary-grid">` +
@@ -375,7 +376,7 @@ function renderCompare(result) {
   const best = comp.best || {};
 
   const comparisonTable = tableHTML(
-    ["target", "model", "TTFT (s)", "生成速度 (tok/s)", "TPOT (s)", "prefill (tok/s)", "集約 tok/s (peak)"],
+    [t("table.target"), t("table.model"), t("table.ttftCol"), t("table.genCol"), t("table.tpotCol"), t("table.prefillCol"), t("table.aggPeak")],
     rows.map((r) => {
       const cell = (v, metric, digits, suffix) => {
         let s = fmtNum(v, digits) + (suffix || "");
@@ -407,20 +408,20 @@ function renderCompare(result) {
   );
 
   const charts =
-    "<h3>比較グラフ</h3>" +
-    "<h4>生成速度 (median, tok/s)</h4>" +
+    `<h3>${t("compare.charts")}</h3>` +
+    `<h4>${t("chart.gen")}</h4>` +
     barChartSVG(rows.map((r) => ({ label: r.name, value: r.gen_tok_per_s_median, isBest: best.gen_tok_per_s_median === r.name }))) +
-    "<h4>TTFT (median, s)</h4>" +
+    `<h4>${t("chart.ttft")}</h4>` +
     barChartSVG(rows.map((r) => ({ label: r.name, value: r.ttft_s_median, isBest: best.ttft_s_median === r.name }))) +
-    "<h4>並列集約スループット (peak, tok/s)</h4>" +
+    `<h4>${t("chart.peak")}</h4>` +
     barChartSVG(rows.map((r) => ({ label: r.name, value: r.parallel_aggregate_tok_per_s_peak, isBest: best.parallel_aggregate_tok_per_s_peak === r.name })));
 
-  const details = "<h3>詳細</h3>" + Object.values(result.targets)
-    .map((t) => targetDetailHTML(t, false))
+  const details = `<h3>${t("compare.details")}</h3>` + Object.values(result.targets)
+    .map((tg) => targetDetailHTML(tg, false))
     .join("");
 
   $("result-body").innerHTML =
-    "<h3>比較表 (緑字が各指標の最良値)</h3>" + comparisonTable + charts + details;
+    `<h3>${t("compare.bestNote")}</h3>` + comparisonTable + charts + details;
 }
 
 /* ---------- export ---------- */
@@ -431,7 +432,7 @@ async function downloadReport(format) {
     const resp = await fetch("/api/report?format=" + format);
     if (!resp.ok) {
       const data = await resp.json().catch(() => ({}));
-      alert(data.error || "レポート取得に失敗しました");
+      alert(data.error || t("alert.reportFailed"));
       return;
     }
     const blob = await resp.blob();
@@ -442,7 +443,7 @@ async function downloadReport(format) {
     a.click();
     URL.revokeObjectURL(a.href);
   } catch (e) {
-    alert("ダウンロードに失敗しました: " + e);
+    alert(t("alert.downloadFailed", { err: e }));
   }
 }
 
@@ -451,7 +452,7 @@ async function downloadReport(format) {
 async function fetchModels() {
   const base = $("base-url").value.trim();
   if (!base) {
-    alert("Base URL を入力してください");
+    alert(t("alert.noBaseUrl"));
     return;
   }
   const btn = $("fetch-models");
@@ -464,7 +465,7 @@ async function fetchModels() {
     });
     const data = await resp.json();
     if (!resp.ok) {
-      alert(data.error || "モデル一覧の取得に失敗しました");
+      alert(data.error || t("alert.modelsFailed"));
       return;
     }
     const dl = $("model-list");
@@ -473,7 +474,7 @@ async function fetchModels() {
       $("model").value = data.models[0];
     }
   } catch (e) {
-    alert("接続エラー: " + e);
+    alert(t("alert.connError", { err: e }));
   } finally {
     btn.disabled = false;
   }
@@ -492,3 +493,4 @@ $("fetch-models").addEventListener("click", fetchModels);
 
 addTargetRow({ name: "llamacpp", url: "http://localhost:8080/v1", model: "" });
 addTargetRow({ name: "ollama", url: "http://localhost:11434/v1", model: "" });
+applyI18n();

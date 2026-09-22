@@ -15,10 +15,13 @@ the client side, with both a CLI and a built-in Web UI.
 - **Compare mode**: benchmark several backends sequentially with identical
   settings and get a single comparison report (best value per metric highlighted)
 - **Web UI**: live progress, summary cards, tables, and hand-rolled SVG charts
-  (no frontend framework, no build step)
+  (no frontend framework, no build step). UI language is switchable between
+  Japanese and English from the header (persisted in `localStorage`)
 - **Prefix-cache busting**: prompts are randomized per request by default so
   server-side prompt/prefix caches don't distort the numbers
-- **Lightweight**: the only dependency is `httpx`
+- **Lightweight**: the only Python dependency is `httpx`. The Web UI uses the
+  [sashimi-ui](https://github.com/yuto-hasegawa/sashimi-ui) CSS framework
+  (vendored under `llmservebench/web/vendor/`, MIT licensed)
 - **Reports**: JSON + Markdown export
 
 ## Install
@@ -119,3 +122,7 @@ in-process, so no real backend or GPU is needed.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+The bundled CSS in `llmservebench/web/vendor/` is
+[sashimi-ui](https://github.com/yuto-hasegawa/sashimi-ui), licensed under the
+MIT license.

@@ -74,8 +74,16 @@ def _make_handler() -> type[BaseHTTPRequestHandler]:
                 self._send_file(WEB_DIR / "index.html", "text/html; charset=utf-8")
             elif path == "/app.js":
                 self._send_file(WEB_DIR / "app.js", "text/javascript; charset=utf-8")
+            elif path == "/i18n.js":
+                self._send_file(WEB_DIR / "i18n.js", "text/javascript; charset=utf-8")
             elif path == "/style.css":
                 self._send_file(WEB_DIR / "style.css", "text/css; charset=utf-8")
+            elif path == "/vendor/sashimi.default.theme.css":
+                self._send_file(
+                    WEB_DIR / "vendor" / "sashimi.default.theme.css", "text/css; charset=utf-8"
+                )
+            elif path == "/vendor/sashimi.bundle.css":
+                self._send_file(WEB_DIR / "vendor" / "sashimi.bundle.css", "text/css; charset=utf-8")
             elif path == "/api/status":
                 with _lock:
                     payload = {
